@@ -17,11 +17,6 @@ void print_int_array(int *array, int lenght) {
     }
 }
 
-void read_char_array(char *array, int lenght) {
-    if(read(STDIN_FILENO, array, lenght*sizeof(char)) == -1)
-        eprintf("ERROR: %s", strerror(errno));
-}
-
 void read_int_array(int *array, int lenght) {
     char buf[lenght];
 
