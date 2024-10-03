@@ -10,7 +10,9 @@
         "tuple": "cpp",
         "type_traits": "cpp",
         "utility": "cpp",
-        "vector": "cpp"
+        "vector": "cpp",
+        "cstdlib": "c",
+        "initializer_list": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
