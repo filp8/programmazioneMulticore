@@ -24,4 +24,5 @@ int main(void) {
     }
     free(to_sum);
     printf("result = %ld\n", result);
+    return 0;
 }

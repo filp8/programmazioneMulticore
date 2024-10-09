@@ -20,7 +20,7 @@ int *generate_random_vector(size_t n_elements) {
     return result;
 }
 
-#define LENGTH 1024*1024*1024
+#define LENGTH 64*1024*1024
 
 int main(void) {
     int r = MPI_Init(NULL,NULL);
@@ -59,4 +59,5 @@ int main(void) {
         printf("result = %ld\n", result);
     }
     MPI_Finalize();
+    return 0;
 }

@@ -21,7 +21,7 @@ int *generate_random_vector(size_t n_elements) {
     return result;
 }
 
-#define LENGTH 1024*1024*1024
+#define LENGTH 64*1024*1024
 
 int main(void) {
     int r = MPI_Init(NULL,NULL);
@@ -31,7 +31,7 @@ int main(void) {
         MPI_Abort(MPI_COMM_WORLD, r);
     }
 
-    //set_log_level(LOG_DEBUG);
+    set_log_level(LOG_ERROR);
 
     int size, rank;
 
@@ -87,4 +87,5 @@ int main(void) {
     }
 
     MPI_Finalize();
+    return 0;
 }
