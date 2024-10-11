@@ -54,42 +54,51 @@ typedef struct {
 Contex parse_args(int argc, char **argv) {
     //TODO: permettere all'utente di inserire l'input n.
 
+    char *endptr = NULL;
     char *program = argv[0];
 
-    fatal_if(argc != 4
-        ,"Gli argomenti di %s devono essere 3, sono stati inseriti: %d", program,argc - 1);
+    fatal_if(argc != 4,
+        "Gli argomenti di %s devono essere 3, sono stati inseriti: %d", program,argc - 1);
+
+    double a = strtod(argv[1], &endptr);
+    fatal_if(*endptr != '\0',
+        "error occured while parsing the 'a' argument: %s", strerror(errno));
+
+    double b = strtod(argv[2], &endptr);
+    fatal_if(*endptr != '\0',
+        "error occured while parsing the 'b' argument: %s", strerror(errno));
+
+    long n = strtol(argv[3], &endptr, 10);
+    fatal_if(*endptr != '\0',
+        "error occured while parsing the 'n' argument: %s", strerror(errno));
 
     Contex ctx = {
-        .a = atof(argv[1]),
-        .b = atof(argv[2]),
-        .n = atoi(argv[3]),
+        .a = a,
+        .b = b,
+        .n = n,
     };
-    ctx.h = (ctx.b-ctx.a)/ctx.n;
+    ctx.h = (ctx.b-ctx.a)/(double)ctx.n;
 
     return ctx;
 }
 
-#define A__ (double)0
-#define B__ (double)1
-#define N__ 1024
-
 int main(int argc, char **argv) {
 
-    //Contex ctx = parse_args(argc, argv);
+#ifdef DEBUG
+    set_log_level(LOG_DEBUG);
+#endif
+
+    Contex ctx = parse_args(argc, argv);
     int rank, size;
 
     Control(MPI_Init(&argc, &argv));
 
-    set_log_level(LOG_DEBUG);
-
     Control(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
     Control(MPI_Comm_size(MPI_COMM_WORLD, &size));
-    
-    double h = (B__- A__)/N__;
 
-    int local_n = N__/size;
-    double slice = h*local_n;
-    double local_a = A__ + rank*slice;
+    int local_n = ctx.n/size;
+    double slice = ctx.h*local_n;
+    double local_a = ctx.a + rank*slice;
     double local_b = local_a + slice;
 
     log_debug("rank %d A:%lf B:%lf N:%d",rank,local_a,local_b,local_n);
