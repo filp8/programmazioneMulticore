@@ -4,10 +4,10 @@
 
 #include <mpi.h>
 
-#include "utils/macros.h"
 #define LOGGING_IMPLEMENTATION
-#include "utils/logging.h"
 #define STRINGS_IMPLEMENTATION
+#include "utils/macros.h"
+#include "utils/logging.h"
 #include "utils/strings.h"
 
 typedef struct {
@@ -16,9 +16,9 @@ typedef struct {
     size_t capacity;
 } DA_Double;
 
-DA_Double get_vector_from_input(void) {
+void get_vector_from_input(double **result, size_t *len) {
 
-    DA_Double result = {0};
+    DA_Double doubles = {0};
 
     printf("Insert vector\nUse ',' as delimit for numbers and for stopping input write ';'\n: ");
     fflush(stdout);
@@ -36,21 +36,22 @@ DA_Double get_vector_from_input(void) {
     while(sv_input.lenght > 0) {
 
         String_View sv_number = sv_chop_by_delim(&sv_input, ',');
+        sv_trim(&sv_number);
         sb_append_sv(&cstr_number, sv_number);
         sb_to_cstr(&cstr_number);
 
         double number = strtod(cstr_number.data, &endptr);
         fatal_if(*endptr != '\0',
-            "Number is invalid: %s", cstr_number.data);
+            "Number is invalid: '%s'", cstr_number.data);
         
-        append(&result, number);
+        append(&doubles, number);
         cstr_number.lenght = 0;
     }
 
-defer:
     free(input.data);
     if(cstr_number.data != NULL) free(cstr_number.data);
-    return result;
+    *result = doubles.data;
+    *len = doubles.lenght;
 }
 
 int main(int argc, char **argv) {
@@ -64,18 +65,17 @@ int main(int argc, char **argv) {
     size_t total_len = 0;
     size_t length = 0;
 
-    double *array1;
-    double *array2;
+    double *array1 = NULL;
+    double *array2 = NULL;
 
     if(rank == 0) {
-        DA_Double vec1 = get_vector_from_input();
-        DA_Double vec2 = get_vector_from_input();
-        fatal_if(vec1.lenght != vec2.lenght,
+        size_t len1,len2;
+        get_vector_from_input(&array1, &len1);
+        get_vector_from_input(&array2, &len2);
+        fatal_if(len1 != len2,
             "The input vectors must have the same size");
-        total_len = vec1.lenght;
-        length = vec1.lenght/size; //TODO: la lunghezza potrebbe non essere divisibile per il numero di processi
-        array1 = vec1.data;
-        array2 = vec2.data;
+        total_len = len1;
+        length = len1/size; //TODO: la lunghezza potrebbe non essere divisibile per il numero di processi
     }
 
     Control(MPI_Bcast(&length, 1, MPI_LONG, 0, MPI_COMM_WORLD));
@@ -97,7 +97,17 @@ int main(int argc, char **argv) {
         result[i] = array1[i] + array2[i];
     }
 
-    Control(MPI_Gather(result, length, MPI_DOUBLE, array1, total_len, MPI_DOUBLE, 0, MPI_COMM_WORLD));
+    Control(MPI_Gather(result, length, MPI_DOUBLE, array1, length, MPI_DOUBLE, 0, MPI_COMM_WORLD));
+
+    if(rank == 0) {
+        printf("risultato finale: ");
+        for(size_t i = 0; i < total_len; i++) {
+            printf("%lf",array1[i]);
+            if(i != total_len - 1)
+                putchar(',');
+        }
+        putchar('\n');
+    }
 
     free(array1);
     free(array2);
