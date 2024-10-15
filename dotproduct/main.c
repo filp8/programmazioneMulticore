@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
 
     double *array1 = NULL;
     double *array2 = NULL;
-
+    double start;
     if(rank == 0) {
         size_t len1,len2;
         get_vector_from_input(&array1, &len1);
@@ -75,8 +75,11 @@ int main(int argc, char **argv) {
         fatal_if(len1 != len2,
             "The input vectors must have the same size");
         total_len = len1;
+        fatal_if(len1 % size != 0, "the number of process must devide the array size");
         length = len1/size; //TODO: la lunghezza potrebbe non essere divisibile per il numero di processi
     }
+    Control(MPI_Barrier(MPI_COMM_WORLD));
+    start = MPI_Wtime();
 
     Control(MPI_Bcast(&length, 1, MPI_LONG, 0, MPI_COMM_WORLD));
 
@@ -99,6 +102,11 @@ int main(int argc, char **argv) {
 
     Control(MPI_Gather(result, length, MPI_DOUBLE, array1, length, MPI_DOUBLE, 0, MPI_COMM_WORLD));
 
+    Control(MPI_Barrier(MPI_COMM_WORLD));
+    double end = MPI_Wtime() - start;
+    double time_result = 0;
+    Control(MPI_Reduce(&end, &time_result, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD));
+
     if(rank == 0) {
         printf("risultato finale: ");
         for(size_t i = 0; i < total_len; i++) {
@@ -107,6 +115,7 @@ int main(int argc, char **argv) {
                 putchar(',');
         }
         putchar('\n');
+        printf("Tempo calcolo: %lf\n", time_result);
     }
 
     free(array1);
