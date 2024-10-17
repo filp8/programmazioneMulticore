@@ -27,6 +27,7 @@ void print_vec(int *vec, size_t len) {
             eprintf(", ");        
     }
     eprintf("\n");
+    fflush(stderr);
 }
 
 int *generate_vector(size_t len) {
@@ -34,7 +35,7 @@ int *generate_vector(size_t len) {
     DA_Int vec = {0};
 
     vec.data = malloc(len*sizeof(int));
-    fatal_if(vec.data == 0,"Out of memory, buy more RAM");
+    fatal_if(vec.data == NULL,"Out of memory, buy more RAM");
     vec.capacity = len;
     for(size_t i = 0; i < len; i++) {
         append(&vec, (rand() % 10));
@@ -110,17 +111,22 @@ int main(int argc, char **argv) {
     Control(MPI_Barrier(MPI_COMM_WORLD));
     double end = MPI_Wtime() - start;
     double time_result = 0;
-    Control(MPI_Reduce(&end, &time_result, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD));
+    Control(MPI_Reduce(
+        &end, &time_result, 1,
+        MPI_DOUBLE, MPI_MAX,
+        0, MPI_COMM_WORLD
+    ));
 
     if(rank == 0) {
-        printf("risultato finale: ");
+        eprintf("risultato finale: ");
         for(size_t i = 0; i < LEN; i++) {
-            printf("%d",array1[i]);
+            eprintf("%d",array1[i]);
             if(i != LEN - 1)
-                putchar(',');
+                putc(',',stderr);
         }
-        putchar('\n');
-        printf("Tempo calcolo: %lf\n", time_result);
+        putc('\n',stderr);
+        eprintf("Tempo calcolo: %lf\n", time_result);
+        fflush(stdout);
     }
 
     free(array1);
