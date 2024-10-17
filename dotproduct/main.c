@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <alloca.h>
+#include <time.h>
 
 #include <mpi.h>
 
@@ -10,78 +12,68 @@
 #include "utils/logging.h"
 #include "utils/strings.h"
 
+#define LEN 40
+
 typedef struct {
-    double *data;
+    int *data;
     size_t lenght;
     size_t capacity;
-} DA_Double;
+} DA_Int;
 
-void get_vector_from_input(double **result, size_t *len) {
-
-    DA_Double doubles = {0};
-
-    printf("Insert vector\nUse ',' as delimit for numbers and for stopping input write ';'\n: ");
-    fflush(stdout);
-
-    String_Builder input = {0};
-    char c;
-    //TODO: usare la syscall read che è meglio
-    while((c = getchar()) != ';') {
-        append(&input, c);
+void print_vec(int *vec, size_t len) {
+    for(size_t i = 0; i<len; i++) {
+        eprintf("%d",vec[i]);
+        if(i != LEN - 1)
+            eprintf(", ");        
     }
-    String_View sv_input = sv_from_sb(&input);
-    String_Builder cstr_number = {0};
-    char *endptr;
-
-    while(sv_input.lenght > 0) {
-
-        String_View sv_number = sv_chop_by_delim(&sv_input, ',');
-        sv_trim(&sv_number);
-        sb_append_sv(&cstr_number, sv_number);
-        sb_to_cstr(&cstr_number);
-
-        double number = strtod(cstr_number.data, &endptr);
-        fatal_if(*endptr != '\0',
-            "Number is invalid: '%s'", cstr_number.data);
-        
-        append(&doubles, number);
-        cstr_number.lenght = 0;
-    }
-
-    free(input.data);
-    if(cstr_number.data != NULL) free(cstr_number.data);
-    *result = doubles.data;
-    *len = doubles.lenght;
+    eprintf("\n");
 }
+
+int *generate_vector(size_t len) {
+
+    DA_Int vec = {0};
+
+    vec.data = malloc(len*sizeof(int));
+    fatal_if(vec.data == 0,"Out of memory, buy more RAM");
+    vec.capacity = len;
+    for(size_t i = 0; i < len; i++) {
+        append(&vec, (rand() % 10));
+    }
+
+    print_vec(vec.data, vec.lenght);
+
+    return vec.data;
+
+}
+
 
 int main(int argc, char **argv) {
     Control(MPI_Init(&argc, &argv));
 
     int rank, size;
+#ifdef DEBUG
+    set_log_level(LOG_DEBUG);
+    //setvbuf(stdout, NULL, _IONBF, 0);
+    //setvbuf(stderr, NULL, _IONBF, 0);
+#endif // DEBUG
 
     Control(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
     Control(MPI_Comm_size(MPI_COMM_WORLD, &size));
 
-    size_t total_len = 0;
-    size_t length = 0;
-
-    double *array1 = NULL;
-    double *array2 = NULL;
-    double start;
+    fatal_if(LEN % size != 0, "The Len must divide the process");
+    size_t length = LEN/size; //TODO: la lunghezza potrebbe non essere divisibile per il numero di processi
+    int *array1 = NULL;
+    int *array2 = NULL;
     if(rank == 0) {
-        size_t len1,len2;
-        get_vector_from_input(&array1, &len1);
-        get_vector_from_input(&array2, &len2);
-        fatal_if(len1 != len2,
-            "The input vectors must have the same size");
-        total_len = len1;
-        fatal_if(len1 % size != 0, "the number of process must devide the array size");
-        length = len1/size; //TODO: la lunghezza potrebbe non essere divisibile per il numero di processi
+        unsigned int seed = time(NULL);
+        printf("Seed: %u\n", seed);
+        srand(seed);
+        array1 = generate_vector(LEN);
+        array2 = generate_vector(LEN);
+        fatal_if(LEN % size != 0, "the number of process must devide the array size");
     }
     Control(MPI_Barrier(MPI_COMM_WORLD));
-    start = MPI_Wtime();
-
-    Control(MPI_Bcast(&length, 1, MPI_LONG, 0, MPI_COMM_WORLD));
+    double start = MPI_Wtime();
 
     if(rank != 0) {
         array1 = malloc(length*sizeof(*array1));
@@ -90,17 +82,30 @@ int main(int argc, char **argv) {
         fatal_if(array2 == NULL, "Out of memory, buy more RAM");
     }
 
+    Control(MPI_Scatter(array1, length, MPI_INT, array1, length, MPI_INT, 0, MPI_COMM_WORLD));
+    Control(MPI_Scatter(array2, length, MPI_INT, array2, length, MPI_INT, 0, MPI_COMM_WORLD));
 
-    Control(MPI_Scatter(array1, length, MPI_DOUBLE, array1, length, MPI_DOUBLE, 0, MPI_COMM_WORLD));
-    Control(MPI_Scatter(array2, length, MPI_DOUBLE, array2, length, MPI_DOUBLE, 0, MPI_COMM_WORLD));
+#ifdef DEBUG
+    eprintf("Rank %d ", rank);
+    print_vec(array1, length);
+    eprintf("Rank %d ", rank);
+    print_vec(array2, length);
+    fflush(stderr);
+#endif
 
     // procediamo con il calcolo
-    double result[length];
+    int result[length];
     for(size_t i=0; i<length; i++) {
         result[i] = array1[i] + array2[i];
     }
 
-    Control(MPI_Gather(result, length, MPI_DOUBLE, array1, length, MPI_DOUBLE, 0, MPI_COMM_WORLD));
+#ifdef DEBUG
+    eprintf("Rank %d, risultato: ", rank);
+    print_vec(result, length);
+    fflush(stderr);
+#endif
+
+    Control(MPI_Gather(result, length, MPI_INT, array1, length, MPI_INT, 0, MPI_COMM_WORLD));
 
     Control(MPI_Barrier(MPI_COMM_WORLD));
     double end = MPI_Wtime() - start;
@@ -109,9 +114,9 @@ int main(int argc, char **argv) {
 
     if(rank == 0) {
         printf("risultato finale: ");
-        for(size_t i = 0; i < total_len; i++) {
-            printf("%lf",array1[i]);
-            if(i != total_len - 1)
+        for(size_t i = 0; i < LEN; i++) {
+            printf("%d",array1[i]);
+            if(i != LEN - 1)
                 putchar(',');
         }
         putchar('\n');
