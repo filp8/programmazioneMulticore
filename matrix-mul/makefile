@@ -3,12 +3,16 @@
 all: serial run-serial
 
 
+serial-debug: serial.c
+	mkdir -p build
+	gcc -Og -ggdb -Wall -Wextra -I ./include -o ./build/serial serial.c -DDEBUG
+
 serial: serial.c
 	mkdir -p build
-	gcc -O3 -Wall -Wextra -I ./include -o ./build/serial serial.c
+	gcc -O3 -ggdb -Wall -Wextra -I ./include -o ./build/serial serial.c
 
 run-serial:
-	./build/serial 3
+	./build/serial 2000
 
 main: main.c
 	mpicc -O3 -Wall -Wextra -I ./include -o ./build/main main.c
