@@ -7,23 +7,36 @@
 #define LOGGING_IMPLEMENTATION
 #include "utils/logging.h"
 
-void printMatrix(int *mtx, size_t order) {
+void fprintMatrix(FILE *stream, int *mtx, size_t order) {
     for(size_t i=0; i < order; i++) {
-        eprintf("    ");
+        fprintf(stream ,"    ");
         for(size_t j=0; j < order; j++) {
-            eprintf("%d", mtx[i*order + j]);
+            fprintf(stream, "%d", mtx[i*order + j]);
             if(j == order - 1)
-                eputc('\n');
-            else eprintf(" ,");
+                putc('\n', stream);
+            else fprintf(stream, " ,");
         }
     }
 }
 
-size_t parse_order(int argc, char **argv) {
-    char *program_name = argv[0];
-    (void) program_name;
-    fatal_if(argc != 2, "numero sbagliato di parametri");
+#define eprintMatrix(mtx, order)\
+    fprintMatrix(stderr, (mtx), (order))
+#define printMatrix(mtx, order)\
+    fprintMatrix(stdout, (mtx), (order))
+
+void print_usage(Cstr *program) {
+    log_info("%s <ordine> <output.txt>", program);
+}
+
+size_t parse_order(int argc, char **argv, bool *print_output) {
+    Cstr *program_name = argv[0];
+    if(argc != 3){
+        log_error("numero sbagliato di parametri", NULL);
+        print_usage(program_name);
+        exit(1);
+    }
     char *order = argv[1];
+    *print_output = strcmp(argv[2], "-p") == 0;
     char *endptr;
     size_t result = strtol(order, &endptr, 10);
     fatal_if(*endptr != '\0', "la stringa è sbagliata: %s", order);
@@ -50,7 +63,7 @@ int dot_product(int *vec1, int *vec2,  size_t len) {
 void reverse_matrix(int *mtx, size_t order) {
     int app = 0;
     for(size_t i = 0; i < order; i++) {
-        for(size_t j = 0; j < order; j++) {
+        for(size_t j = i+1; j < order; j++) {
             if(i < j) {
                 size_t index = i*order + j;
                 app = mtx[index];
@@ -88,36 +101,38 @@ int main(int argc, char **argv) {
 #ifdef DEBUG
     set_log_level(LOG_DEBUG);
 #endif // DEBUG
-    unsigned int seed = time(NULL);
-    srand(1729566597);
+    unsigned int seed = 1729566597;
+    srand(seed);
     log_info("Seed = %u", seed);
-    size_t order = parse_order(argc, argv);
+    bool print_output = false;
+    size_t order = parse_order(argc, argv, &print_output);
     int *mtx1 = generate_matrix(order);
     int *mtx2 = generate_matrix(order);
 
     if(log_level <= LOG_DEBUG) {
         eprintf("Prima matrice:\n");
-        printMatrix(mtx1, order);
+        eprintMatrix(mtx1, order);
         eprintf("Seconda matrice:\n");
-        printMatrix(mtx2, order);
+        eprintMatrix(mtx2, order);
     }
 
     int *result = calculate_matrix_mul(mtx1, mtx2, order);
 
     if(log_level <= LOG_DEBUG) {
         eprintf("Matrice risultato:\n");
-        printMatrix(result, order);
+        eprintMatrix(result, order);
     }
 
     clock_t elapsed = clock() - start;
 
     double time_taken = ((double)elapsed)/CLOCKS_PER_SEC;
 
-    free(result);
     free(mtx2);
     free(mtx1);
 
     eprintf("Tempo messo: %lf\n", time_taken);
-    
+    if(print_output)
+        printMatrix(result, order);
+    free(result);
     return 0;
 }

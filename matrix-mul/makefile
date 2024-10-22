@@ -12,7 +12,7 @@ serial: serial.c
 	gcc -O3 -ggdb -Wall -Wextra -I ./include -o ./build/serial serial.c
 
 run-serial:
-	./build/serial 2000
+	./build/serial 2000 -s
 
 main: main.c
 	mpicc -O3 -Wall -Wextra -I ./include -o ./build/main main.c
