@@ -7,72 +7,7 @@
 #define LOGGING_IMPLEMENTATION
 #include "utils/logging.h"
 
-void fprintMatrix(FILE *stream, int *mtx, size_t order) {
-    for(size_t i=0; i < order; i++) {
-        fprintf(stream ,"    ");
-        for(size_t j=0; j < order; j++) {
-            fprintf(stream, "%d", mtx[i*order + j]);
-            if(j == order - 1)
-                putc('\n', stream);
-            else fprintf(stream, " ,");
-        }
-    }
-}
-
-#define eprintMatrix(mtx, order)\
-    fprintMatrix(stderr, (mtx), (order))
-#define printMatrix(mtx, order)\
-    fprintMatrix(stdout, (mtx), (order))
-
-void print_usage(Cstr *program) {
-    log_info("%s <ordine> <output.txt>", program);
-}
-
-size_t parse_order(int argc, char **argv, bool *print_output) {
-    Cstr *program_name = argv[0];
-    if(argc != 3){
-        log_error("numero sbagliato di parametri", NULL);
-        print_usage(program_name);
-        exit(1);
-    }
-    char *order = argv[1];
-    *print_output = strcmp(argv[2], "-p") == 0;
-    char *endptr;
-    size_t result = strtol(order, &endptr, 10);
-    fatal_if(*endptr != '\0', "la stringa è sbagliata: %s", order);
-    return result;
-}
-
-int *generate_matrix(size_t order) {
-    size_t tot_length = order*order;
-    int *result = malloc(tot_length*sizeof(int));
-    for(size_t i = 0; i < tot_length; i++) {
-        result[i] = (rand() % 6) - 1;
-    }
-    return result;
-}
-
-int dot_product(int *vec1, int *vec2,  size_t len) {
-    int result = 0;
-    for(size_t i = 0; i < len; i++) {
-        result += vec1[i]*vec2[i];
-    }
-    return result;
-}
-
-void reverse_matrix(int *mtx, size_t order) {
-    int app = 0;
-    for(size_t i = 0; i < order; i++) {
-        for(size_t j = i+1; j < order; j++) {
-            if(i < j) {
-                size_t index = i*order + j;
-                app = mtx[index];
-                mtx[index] = mtx[j*order + i];
-                mtx[j*order + i] = app;
-            }
-        }
-    }
-}
+#include "matrix.h"
 
 int *calculate_matrix_mul(int *m1, int *m2, size_t order) {
     size_t total_len = order*order;
@@ -104,8 +39,11 @@ int main(int argc, char **argv) {
     unsigned int seed = 1729566597;
     srand(seed);
     log_info("Seed = %u", seed);
-    bool print_output = false;
-    size_t order = parse_order(argc, argv, &print_output);
+
+    //TODO: permettere all'utente di definirlo
+    bool print_output = true;
+
+    size_t order = parse_order_matrix(argc, argv);
     int *mtx1 = generate_matrix(order);
     int *mtx2 = generate_matrix(order);
 
