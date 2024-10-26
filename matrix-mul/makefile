@@ -1,6 +1,6 @@
 
 
-all: serial-debug run-serial
+all: parallel-debug run-parallel
 
 
 serial-debug: serial.c
@@ -14,8 +14,11 @@ serial: serial.c
 run-serial:
 	./build/serial 3
 
-main: main.c
-	mpicc -O3 -Wall -Wextra -I ./include -o ./build/main main.c
+parallel: main.c
+	mpicc -O3 -Wall -Wextra -I ./include -o ./build/parallel main.c
 
-debug:
-	mpicc -Og -Wall -Wextra -ggdb -I ./include -o ./build/main main.c -DDEBUG
+parallel-debug:
+	mpicc -Og -Wall -Wextra -ggdb -I ./include -o ./build/parallel main.c -DDEBUG
+
+run-parallel:
+	mpirun -n 4 ./build/parallel 3

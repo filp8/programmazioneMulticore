@@ -12,12 +12,13 @@
 #include "utils/macros.h"
 #define LOGGING_IMPLEMENTATION
 #include "utils/logging.h"
+#include "utils/random.h"
 
 #include "matrix.h"
 
 typedef struct {
-    int i;
-    int j;
+    size_t i;
+    size_t j;
 } Point;
 
 typedef struct {
@@ -26,24 +27,20 @@ typedef struct {
     size_t capacity;
 } DA_Points;
 
-/*
-    distribuisci i punti da calcolare, ma contando quante soluzioni vanno 
-    per processo, senza contare il rimanente
-*/
-DA_Points distribuite_cols_main(
-    int *mtx, size_t order,
-    int my_rank, int comm_size,
-    int *dest
+DA_Points distribuite_cols(
+    size_t matrix_order,
+    int my_rank, int comm_size
 ) {
     DA_Points result = {0};
-    size_t total_len = order*order; // soluzioni totali da calcolare
+    size_t total_len = matrix_order*matrix_order; // soluzioni totali da calcolare
     size_t solution_for_rank = total_len/comm_size;
-    // size_t remaining_solutions = total_len % comm_size;
+    size_t remaining_solutions = total_len % comm_size;
     size_t distribuited_solutions = 0;
-    int current_rank = 0;
-    for(size_t i=0; i < order; i++) {
-        for(size_t j=0; j < order; j++) {
-            dest[current_rank];
+    int current_rank = comm_size - 1;
+    size_t i = 0;
+    size_t j = 0;
+    for(i=0; i < matrix_order; i++) {
+        for(j=0; j < matrix_order; j++) {
             if(current_rank == my_rank) {
                 Point to_assign = {
                     .i = i,
@@ -53,54 +50,37 @@ DA_Points distribuite_cols_main(
             }
             distribuited_solutions++;
             if(distribuited_solutions == solution_for_rank) {
-                distribuited_solutions = 0;
-                current_rank = (current_rank + 1) % comm_size;
+                if((size_t)current_rank > remaining_solutions || remaining_solutions == 0) {
+                    distribuited_solutions = 0;
+                    total_len -= solution_for_rank;
+                    current_rank = (current_rank - 1 + comm_size) % comm_size;
+                } else {
+                    distribuited_solutions--;
+                    remaining_solutions--;
+                    total_len--;
+                }
             }
             
-            total_len -= solution_for_rank;
-            fatal_if(total_len == 0 && i != order && j != order,
+            fatal_if(total_len == 0 && i < matrix_order - 1 && j < matrix_order - 1,
                 "ended solutions, but points aren't finished");
         }
     }
 
-    //TODO: calcolare quali punti i e j bisogna ancora calcolare
-    DA_Points to_assign = {0};
-
     fatal_if(total_len != 0,
-        "Not all solutions was distribuited"); //TODO: typo
+        "Not all solutions was distribuited,remaining: %lu", total_len); //TODO: typo
 
     return result;
 }
 
-DA_Points distribuite_cols_pending(
-    int *mtx, size_t order,
-    int my_rank, int comm_size,
-    int *dest
-) {
-    DA_Points result = {0};
-    size_t total_len = order*order; // soluzioni totali da calcolare
-    //size_t solution_for_rank = total_len/comm_size;
-    size_t remaining_solutions = total_len % comm_size;
-
-
-    size_t distribuited_solutions = 0;
-    int current_rank = 0;
-
-    for(int rank = 0; rank < comm_size; rank++) {
-
-    }
-
-    if(to_assign.data != NULL) free(to_assign.data);
-
-    return result;
-}
 int main(int argc, char **argv) {
     // in argv ci passiamo l'ordine della matrice
     Control(MPI_Init(&argc, &argv));
-    
-    init_random();
+#if DEBUG
+    setvbuf(stderr, NULL, _IONBF, 0);
+    set_log_level(LOG_DEBUG);
+#endif // DEBUG
 
-    size_t order = parse_order(argc, argv);
+    size_t order = parse_order_matrix(argc, argv);
     size_t total_len = order*order;
 
     int rank, size;
@@ -113,11 +93,13 @@ int main(int argc, char **argv) {
 
 
     if(rank == size - 1) {
+        init_random();
         mtx1 = generate_matrix(order);
         mtx2 = generate_matrix(order);
         reverse_matrix(mtx2, order);
     } else {
         mtx1 = (int*)malloc(total_len*sizeof(*mtx1));
+        mtx2 = (int*)malloc(total_len*sizeof(*mtx2));
     }
 
     Control(MPI_Bcast(
@@ -125,15 +107,23 @@ int main(int argc, char **argv) {
         size - 1, MPI_COMM_WORLD
     ));
 
-    int dest[size];
-    memset(dest, 0, size*sizeof(*dest));
-    DA_Points my_points = distribuite_cols(mtx2, order, rank, size, dest);
+    Control(MPI_Bcast(
+        mtx1, total_len, MPI_INT,
+        size - 1, MPI_COMM_WORLD
+    ));
 
-    log_debug("My total points are: %lu", my_points.length);
+    DA_Points my_points = distribuite_cols(order, rank, size);
+
+    log_debug("Rank %d, My total points are: %lu", rank, my_points.length);
+
+    foreach(Point ,point, &my_points) {
+        log_debug("Rank %d, i: %lu", rank, point->i);
+        log_debug("Rank %d, j: %lu", rank, point->j);
+    }
 
     free(mtx1);
     free(my_points.data);
-    if(mtx2 != NULL) free(mtx2);
+    free(mtx2);
     Control(MPI_Finalize());
     return 0;
 }
