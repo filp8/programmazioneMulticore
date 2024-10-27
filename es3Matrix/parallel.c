@@ -52,6 +52,41 @@ void findPointsContiguo(int rank,int size,size_t rig,size_t col,size_t *inizio,s
     
 }
 
+void arrayDisposizione(int size,size_t rig,size_t col,size_t arrOut[size]){
+    size_t tot_point = rig*col;
+    size_t points_for_rank = tot_point/size;
+    size_t remaning_points = tot_point%size;
+
+    for(size_t rank = 0;rank<size;rank++){
+        if ((size_t)rank<remaning_points){
+            arrOut[rank] = (rank * (points_for_rank+1));
+            
+        }else{
+            arrOut[rank] = (remaning_points * (points_for_rank+1))+
+                    ((rank-remaning_points)*points_for_rank);
+            
+        }  
+    }
+    
+}void arrayNumElementi(int size,size_t rig,size_t col,size_t arrOut[size]){
+    size_t tot_point = rig*col;
+    size_t points_for_rank = tot_point/size;
+    size_t remaning_points = tot_point%size;
+    size_t inizio;
+    size_t fine;
+
+    for(size_t rank = 0;rank<size;rank++){
+        if ((size_t)rank<remaning_points){
+            inizio = (rank * (points_for_rank+1));
+            fine = inizio + points_for_rank;
+        }else{
+            inizio = (remaning_points * (points_for_rank+1))+((rank-remaning_points)*points_for_rank);
+            fine = inizio + points_for_rank-1;
+        }
+        arrOut[rank]=fine-inizio;  
+    }
+}
+
 Point numToPoint(size_t n,size_t col){
     // (n-j)/rig = i
     Point p = {
@@ -111,14 +146,18 @@ int main(int argc, char **argv) {
 
     Control(MPI_Bcast(mat,rig*col,MPI_INT,0,MPI_COMM_WORLD));
 
-    size_t inizio;
-    size_t fine;
-    findPointsContiguo(rank,size,rig,col,&inizio,&fine);
-    log_debug("sono il rank :%d inizio: %ld fine:%ld",rank,inizio,fine);
+    size_t disposizione[size];
+    size_t num_elementi[size];
 
-    size_t lunghezza = fine - inizio + 1;
+    arrayNumElementi(size,rig,col,num_elementi);
+    arrayDisposizione(size,rig,col,disposizione);
 
-    int *ranksolution = malloc(lunghezza*sizeof(int));
+
+
+    size_t inizio = disposizione[rank];
+    size_t fine = disposizione[rank]+num_elementi[rank];
+    size_t lunghezza = num_elementi[rank]*sizeof(int);
+    int *ranksolution = malloc(lunghezza);
     for (size_t s = 0 ; s<S ; s++){
         for(size_t i = inizio ; i<=fine ; i++){
             Point p = numToPoint(i,col);
@@ -129,7 +168,7 @@ int main(int argc, char **argv) {
             if (p.j<col-1){sum += mat[((p.i)*rig)+p.j+1];}
             ranksolution[i-inizio] = sum;
         }
-        MPI_Allgatherv(ranksolution,lunghezza,MPI_INT,mat,);
+        MPI_Allgatherv(ranksolution,lunghezza,MPI_INT,mat,num_elementi,disposizione,MPI_INT,MPI_COMM_WORLD);
     }
     
 
