@@ -137,12 +137,12 @@ int main(int argc, char **argv) {
     if(rank==0) memset(rigaSopra,0,sizeof(int)*col);
     if(rank==size-1) memset(rigaSotto,0,sizeof(int)*col);
 
-    if (rank==0){
-        for(size_t i = 0;i<size;i++){
-            printf("Disposizione[%ld] = %d\n",i,disposizione[i]); 
-            printf("numElementi[%ld] = %d\n",i,num_elementi[i]);
-        }
-    }
+    // if (rank==0){
+    //     for(size_t i = 0;i<size;i++){
+    //         printf("Disposizione[%ld] = %d\n",i,disposizione[i]); 
+    //         printf("numElementi[%ld] = %d\n",i,num_elementi[i]);
+    //     }
+    // }
 
     Control(MPI_Scatterv(mat,num_elementi,disposizione,MPI_INT,ricezione,num_elementi[rank],MPI_INT,0,MPI_COMM_WORLD));
     
@@ -156,6 +156,7 @@ int main(int argc, char **argv) {
             0,
             MPI_COMM_WORLD,
             &handler_invio_sopra));
+        log_debug("il rank %d sopra iSend",rank);
     }
 
     MPI_Request handler_invio_sotto = MPI_REQUEST_NULL;
@@ -168,6 +169,8 @@ int main(int argc, char **argv) {
             1,
             MPI_COMM_WORLD,
             &handler_invio_sotto));
+        log_debug("il rank %d sotto iSend",rank);
+
     }
 
     int *array_ris = malloc(num_elementi[rank]*sizeof(int));
@@ -175,23 +178,33 @@ int main(int argc, char **argv) {
     
     for(size_t s = 0;s<S;s++){
 
-        if(rank!=0) Control(MPI_Recv(
+        if(rank!=size-1){
+                    Control(MPI_Recv(
+                                rigaSotto,
+                                col,
+                                MPI_INT,
+                                rank+1,
+                                0,
+                                MPI_COMM_WORLD,
+                                MPI_STATUS_IGNORE));
+                    log_debug("il rank %d sotto Recv",rank);
+        }
+
+        if(rank!=0) {
+            Control(MPI_Recv(
                         rigaSopra,
                         col,
                         MPI_INT,
                         rank-1,
-                        0,
-                        MPI_COMM_WORLD,
-                        MPI_STATUS_IGNORE));
-
-        if(rank!=size-1) Control(MPI_Recv(
-                        rigaSotto,
-                        col,
-                        MPI_INT,
-                        rank+1,
                         1,
                         MPI_COMM_WORLD,
                         MPI_STATUS_IGNORE));
+            log_debug("il rank %d sopra Recv",rank);
+        }
+            
+
+        
+
 
         for(size_t i = 0 ; i < num_elementi[rank] ; i++){
             if(0<=i<col){
@@ -214,6 +227,7 @@ int main(int argc, char **argv) {
         int *appoggio = ricezione;
         ricezione = array_ris;
         array_ris = appoggio;
+        memset(array_ris,0,num_elementi[rank]*sizeof(int));
 
         if(s<S-1){
             Control(MPI_Wait(&handler_invio_sopra,MPI_STATUS_IGNORE));
@@ -255,60 +269,8 @@ int main(int argc, char **argv) {
         MPI_COMM_WORLD
     ));
 
-    if(rank==0) printMatrix(mat,rig,col);
+    //if(rank==0) printMatrix(mat,rig,col);
 
     Control(MPI_Finalize());
     return 0;
 }
-
-
-
-    
-    #if 0
-for(size_t i = 0;i<num_elementi[rank];i++){
-            printf("dal rank %d ricezione[%ld] = %d\n",rank,i,ricezione[i]); 
-        }
-    //MPI_Scatterv(mat, NULL, NULL, MPI_INT, NULL, 0,MPI_INT,0,MPI_COMM_WORLD);
-    // *********************
-    // +++++++++++++++++++++
-    // *********************
-    // +++++++++++++++++++++
-
-    size_t inizio = disposizione[rank];
-    size_t fine = disposizione[rank]+num_elementi[rank];
-    int *ranksolution = malloc(num_elementi[rank]*sizeof(int));
-    for (size_t s = 0 ; s<S ; s++){
-        if(rank==0){printMatrix(mat,rig,col);printf("\n");}
-        for(size_t i = inizio ; i<=fine ; i++){
-            
-            Point p = numToPoint(i,col);
-            int sum = 0;
-            if (p.i>0){sum += mat[((p.i-1)*col)+p.j];}
-            if ((size_t) p.i<rig-1){sum += mat[((p.i+1)*col)+p.j];}
-            if (p.j>0){sum += mat[((p.i)*col)+p.j-1];}
-            if ((size_t)p.j<col-1){sum += mat[((p.i)*col)+p.j+1];}
-            ranksolution[i-inizio] = sum;
-        }
-        Control(MPI_Allgatherv(ranksolution,num_elementi[rank],
-                MPI_INT,mat,
-                num_elementi,disposizione,MPI_INT,MPI_COMM_WORLD));
-                //S*log(size)
-                //S*2
-        }
-
-        
-    if(rank==0){printMatrix(mat,rig,col);}
-
-    #endif
-    
-
-#if 0
-typedef struct {
-    Point *data;
-    size_t length;
-    size_t capacity;
-}DA_points;
-
-
-
-#endif // ignorato

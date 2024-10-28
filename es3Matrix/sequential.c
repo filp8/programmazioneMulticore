@@ -30,7 +30,6 @@ int main(int argc, char **argv) {
     size_t rig = 0;
     size_t S = 0;
 
-
     if (argc==4){
         col = atol(argv[1]);
         rig = atol(argv[2]);
@@ -40,13 +39,10 @@ int main(int argc, char **argv) {
         log_fatal("numero di argomenti sbagliato");
     }
 
-
-
     //init_random();
     srand(2476063558);
     int *mat1 = generate_random_matrix(rig,col,-5,5);
     int *mat2 = (int*)malloc((rig*col)*sizeof(int));
-    //printMatrix(mat1,rig,col);
         for (size_t s = 0 ; s<S ; s++){
             for (size_t i = 0;i<rig;i++){
                 for(size_t j =0;j<col;j++){
@@ -55,7 +51,6 @@ int main(int argc, char **argv) {
                         .j = j
                     };
                     size_t n = pointToNum(p,col);
-                    //printf("n: %lu\n",n);
                     int sum = 0;
                     if (i>0){
                         Point x = {
@@ -63,7 +58,6 @@ int main(int argc, char **argv) {
                             .j = j
                         };
                         size_t nn = pointToNum(x,col);
-                        //printf("i > 0 nn: %lu\n", nn);
                         sum += mat1[nn];
                     }
                     if (i<rig-1){
@@ -72,7 +66,6 @@ int main(int argc, char **argv) {
                             .j = j
                         };
                         size_t nn = pointToNum(x,col);
-                        //printf("i < rig-1 nn: %lu\n", nn);
                         sum += mat1[nn];
                     }
                     if (j>0){
@@ -81,7 +74,6 @@ int main(int argc, char **argv) {
                             .j = j - 1
                         };
                         size_t nn = pointToNum(x,col);
-                        //printf("j > 0 nn: %lu\n", nn);
                         sum += mat1[nn];
                     }
                     if (j<col-1){
@@ -90,19 +82,15 @@ int main(int argc, char **argv) {
                             .j = j + 1
                         };
                         size_t nn = pointToNum(x,col);
-                        //printf("j < col - 1 nn: %lu\n", nn);
                         sum += mat1[nn];
                     }
                     mat2[n] = sum;
                 }
             }
-            printMatrix(mat1,rig,col);
-            printf("\n");
             int *appoggio = mat1;
             mat1 = mat2;
             mat2 = appoggio;
         }
-        printMatrix(mat1,rig,col);
-    
+        //printMatrix(mat1,rig,col);
     return 0;
 }
