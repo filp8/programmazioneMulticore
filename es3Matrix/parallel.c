@@ -64,13 +64,13 @@ void arrayNumElementiInvio(
     int comm_size, int* sendcounts,
     size_t rows, size_t cols
 ) {
-    //memset(sendcounts,0,comm_size*sizeof(*sendcounts));
+    
     int row_for_rank  = rows/comm_size;
-    //printf("rows_for_rank: %d\n",rows);
     int row_remaining = rows%comm_size;
+
     for(int rank=0; rank<comm_size; rank++) {
         int to_sum = 0;
-        if(rank < row_remaining) to_sum++;
+        if(rank < row_remaining) to_sum += cols;
         to_sum += row_for_rank*cols;
         sendcounts[rank] = to_sum;
     }
@@ -79,12 +79,20 @@ void arrayNumElementiInvio(
 void arrayDisposizioneInvio(
     int comm_size, int* displs,int *sendcounts
 ) {
-    //memset(displs,0,comm_size*sizeof(*displs));
-
+    
+    displs[0]=0;
     for(int rank=1; rank<comm_size; rank++) {
         displs[rank] = sendcounts[rank-1] + displs[rank-1];
     }
 }
+
+
+
+
+int* ultima_riga(int* ricezione,int num_elementi,int col){
+    return ricezione+num_elementi-col;
+}
+
 
 int main(int argc, char **argv) {
     Control(MPI_Init(&argc, &argv));
@@ -92,7 +100,6 @@ int main(int argc, char **argv) {
     size_t col = 0 ;
     size_t rig = 0 ;
     size_t S = 0 ;
-
 
     if (argc==4){
         col = atol(argv[1]);
@@ -102,9 +109,6 @@ int main(int argc, char **argv) {
     }else{
         log_fatal("numero di argomenti sbagliato");
     }
-
-
-    
 
     int rank, size;
 
@@ -117,29 +121,153 @@ int main(int argc, char **argv) {
         //init_random();
         srand(2476063558);
         mat = generate_random_matrix(rig,col,-5,5);
-    } else {
-        mat = malloc(rig*col*sizeof(*mat));
-        fatal_if(mat == NULL, MSG_ERR_FULL_MEMORY);
     }
 
-    Control(MPI_Bcast(mat,rig*col,MPI_INT,0,MPI_COMM_WORLD));
-
-    //Control(MPI_Bcast(mat,rig*col,MPI_INT,0,MPI_COMM_WORLD));
     int num_elementi[size];
     int disposizione[size];
+  
+    arrayNumElementiInvio(size,num_elementi,rig,col);
+    arrayDisposizioneInvio(size,disposizione,num_elementi);
 
-    /*arrayNumElementiInvio(size,sendcounts,rig,col);
-    arrayDisposizioneInvio(size,displs,sendcounts);
-    if(rank == 0) {
-        for(int r=0;r<size;r++) {
-            printf("sendcounts[%d] = %d\n",r,sendcounts[r]);
-            printf("displs[%d] = %d\n",r,displs[r]);
+    int *ricezione = malloc(num_elementi[rank]*sizeof(int));
+
+    int rigaSopra[col];
+    int rigaSotto[col];
+
+    if(rank==0) memset(rigaSopra,0,sizeof(int)*col);
+    if(rank==size-1) memset(rigaSotto,0,sizeof(int)*col);
+
+    if (rank==0){
+        for(size_t i = 0;i<size;i++){
+            printf("Disposizione[%ld] = %d\n",i,disposizione[i]); 
+            printf("numElementi[%ld] = %d\n",i,num_elementi[i]);
         }
-    }*/
+    }
 
-    arrayNumElementiRicezione(size,rig,col,num_elementi);
-    arrayDisposizioneRicezione(size,rig,col,disposizione);
+    Control(MPI_Scatterv(mat,num_elementi,disposizione,MPI_INT,ricezione,num_elementi[rank],MPI_INT,0,MPI_COMM_WORLD));
+    
+    MPI_Request handler_invio_sopra = MPI_REQUEST_NULL;
+    if(rank!=0){
+        Control(MPI_Isend(
+            ricezione,
+            col,
+            MPI_INT,
+            rank-1,
+            0,
+            MPI_COMM_WORLD,
+            &handler_invio_sopra));
+    }
 
+    MPI_Request handler_invio_sotto = MPI_REQUEST_NULL;
+    if(rank!=size-1){
+        Control(MPI_Isend(
+            ultima_riga(ricezione,num_elementi[rank],col),
+            col,
+            MPI_INT,
+            rank+1,
+            1,
+            MPI_COMM_WORLD,
+            &handler_invio_sotto));
+    }
+
+    int *array_ris = malloc(num_elementi[rank]*sizeof(int));
+    memset(array_ris,0,num_elementi[rank]*sizeof(int));
+    
+    for(size_t s = 0;s<S;s++){
+
+        if(rank!=0) Control(MPI_Recv(
+                        rigaSopra,
+                        col,
+                        MPI_INT,
+                        rank-1,
+                        0,
+                        MPI_COMM_WORLD,
+                        MPI_STATUS_IGNORE));
+
+        if(rank!=size-1) Control(MPI_Recv(
+                        rigaSotto,
+                        col,
+                        MPI_INT,
+                        rank+1,
+                        1,
+                        MPI_COMM_WORLD,
+                        MPI_STATUS_IGNORE));
+
+        for(size_t i = 0 ; i < num_elementi[rank] ; i++){
+            if(0<=i<col){
+                array_ris[i]+=rigaSopra[i];
+            }else{
+                array_ris[i]+=ricezione[i-col];
+            }
+            
+            if(num_elementi[rank]-col<=i<num_elementi[rank]){
+                array_ris[i]+=rigaSotto[i%col];
+            }else{
+                array_ris[i]+=ricezione[i+col];
+            }
+
+            if(i%col!=0) array_ris[i]+=ricezione[i-1];
+
+            if(i%col!=col-1) array_ris[i]+=ricezione[i+1];    
+        }
+
+        int *appoggio = ricezione;
+        ricezione = array_ris;
+        array_ris = appoggio;
+
+        if(s<S-1){
+            Control(MPI_Wait(&handler_invio_sopra,MPI_STATUS_IGNORE));
+            if(rank!=0){
+                Control(MPI_Isend(
+                    ricezione,
+                    col,
+                    MPI_INT,
+                    rank-1,
+                    0,
+                    MPI_COMM_WORLD,
+                    &handler_invio_sopra));
+            }
+
+            Control(MPI_Wait(&handler_invio_sotto,MPI_STATUS_IGNORE));
+            if(rank!=size-1){
+                Control(MPI_Isend(
+                    ultima_riga(ricezione,num_elementi[rank],col),
+                    col,
+                    MPI_INT,
+                    rank+1,
+                    1,
+                    MPI_COMM_WORLD,
+                    &handler_invio_sotto));
+            }
+        }
+        
+    }
+
+    Control(MPI_Gatherv(
+        ricezione,
+        num_elementi[rank],
+        MPI_INT,
+        mat,
+        num_elementi,
+        disposizione,
+        MPI_INT,
+        0,
+        MPI_COMM_WORLD
+    ));
+
+    if(rank==0) printMatrix(mat,rig,col);
+
+    Control(MPI_Finalize());
+    return 0;
+}
+
+
+
+    
+    #if 0
+for(size_t i = 0;i<num_elementi[rank];i++){
+            printf("dal rank %d ricezione[%ld] = %d\n",rank,i,ricezione[i]); 
+        }
     //MPI_Scatterv(mat, NULL, NULL, MPI_INT, NULL, 0,MPI_INT,0,MPI_COMM_WORLD);
     // *********************
     // +++++++++++++++++++++
@@ -170,9 +298,9 @@ int main(int argc, char **argv) {
 
         
     if(rank==0){printMatrix(mat,rig,col);}
-    Control(MPI_Finalize());
-    return 0;
-}
+
+    #endif
+    
 
 #if 0
 typedef struct {
