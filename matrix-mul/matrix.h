@@ -7,6 +7,7 @@
 
 #include "utils/macros.h"
 #include "utils/logging.h"
+#include "utils/random.h"
 
 size_t parse_order_matrix(int argc, char **argv) {
     char *program_name = argv[0];
@@ -26,7 +27,7 @@ int *generate_matrix(size_t order) {
     fatal_if(result == NULL ,MSG_ERR_FULL_MEMORY);
 
     for(size_t i = 0; i < tot_length; i++) {
-        result[i] = rand() % 10;
+        result[i] = uniform_int_distribution(-5, 5);
     }
 
     return result;

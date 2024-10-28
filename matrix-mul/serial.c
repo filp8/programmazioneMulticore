@@ -4,8 +4,9 @@
 #include <time.h>
 #include <string.h>
 
-#define LOGGING_IMPLEMENTATION
 #include "utils/logging.h"
+#define RANDOM_IMPLEMENTATION
+#include "utils/random.h"
 
 #include "matrix.h"
 
@@ -36,12 +37,12 @@ int main(int argc, char **argv) {
 #ifdef DEBUG
     set_log_level(LOG_DEBUG);
 #endif // DEBUG
-    unsigned int seed = 1729566597;
+    unsigned int seed = 4111945811;
     srand(seed);
     log_info("Seed = %u", seed);
 
     //TODO: permettere all'utente di definirlo
-    bool print_output = true;
+    bool print_output = false;
 
     size_t order = parse_order_matrix(argc, argv);
     int *mtx1 = generate_matrix(order);
