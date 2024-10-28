@@ -52,30 +52,30 @@ void findPointsContiguo(int rank,int size,size_t rig,size_t col,size_t *inizio,s
     
 }
 
-void arrayDisposizione(int size,size_t rig,size_t col,size_t arrOut[size]){
+void arrayDisposizione(int size,size_t rig,size_t col,int arrOut[size]){
     size_t tot_point = rig*col;
     size_t points_for_rank = tot_point/size;
     size_t remaning_points = tot_point%size;
 
-    for(size_t rank = 0;rank<size;rank++){
+    for(int rank = 0;rank<size;rank++){
         if ((size_t)rank<remaning_points){
-            arrOut[rank] = (rank * (points_for_rank+1));
+            arrOut[rank] = (int)(rank * (points_for_rank+1));
             
         }else{
-            arrOut[rank] = (remaning_points * (points_for_rank+1))+
+            arrOut[rank] = (int)(remaning_points * (points_for_rank+1))+
                     ((rank-remaning_points)*points_for_rank);
             
         }  
     }
     
-}void arrayNumElementi(int size,size_t rig,size_t col,size_t arrOut[size]){
+}void arrayNumElementi(int size,size_t rig,size_t col,int arrOut[size]){
     size_t tot_point = rig*col;
     size_t points_for_rank = tot_point/size;
     size_t remaning_points = tot_point%size;
     size_t inizio;
     size_t fine;
 
-    for(size_t rank = 0;rank<size;rank++){
+    for(int rank = 0;rank<size;rank++){
         if ((size_t)rank<remaning_points){
             inizio = (rank * (points_for_rank+1));
             fine = inizio + points_for_rank;
@@ -135,7 +135,8 @@ int main(int argc, char **argv) {
     int *mat = NULL;
 
     if (rank == 0){
-        init_random();
+        //init_random();
+        srand(2476063558);
         mat = generate_random_matrix(rig,col,-5,5);
 
 
@@ -146,8 +147,8 @@ int main(int argc, char **argv) {
 
     Control(MPI_Bcast(mat,rig*col,MPI_INT,0,MPI_COMM_WORLD));
 
-    size_t disposizione[size];
-    size_t num_elementi[size];
+    int disposizione[size];
+    int num_elementi[size];
 
     arrayNumElementi(size,rig,col,num_elementi);
     arrayDisposizione(size,rig,col,disposizione);
@@ -156,23 +157,25 @@ int main(int argc, char **argv) {
 
     size_t inizio = disposizione[rank];
     size_t fine = disposizione[rank]+num_elementi[rank];
-    size_t lunghezza = num_elementi[rank]*sizeof(int);
-    int *ranksolution = malloc(lunghezza);
+    int *ranksolution = malloc(num_elementi[rank]*sizeof(int));
     for (size_t s = 0 ; s<S ; s++){
+        if(rank==0){printMatrix(mat,rig,col);printf("\n");}
         for(size_t i = inizio ; i<=fine ; i++){
+            
             Point p = numToPoint(i,col);
             int sum = 0;
             if (p.i>0){sum += mat[((p.i-1)*rig)+p.j];}
-            if (p.i<rig-1){sum += mat[((p.i+1)*rig)+p.j];}
+            if ((size_t) p.i<rig-1){sum += mat[((p.i+1)*rig)+p.j];}
             if (p.j>0){sum += mat[((p.i)*rig)+p.j-1];}
-            if (p.j<col-1){sum += mat[((p.i)*rig)+p.j+1];}
+            if ((size_t)p.j<col-1){sum += mat[((p.i)*rig)+p.j+1];}
             ranksolution[i-inizio] = sum;
         }
-        MPI_Allgatherv(ranksolution,lunghezza,MPI_INT,mat,num_elementi,disposizione,MPI_INT,MPI_COMM_WORLD);
-    }
-    
-
-
+        Control(MPI_Allgatherv(ranksolution,num_elementi[rank],
+                MPI_INT,mat,
+                num_elementi,disposizione,MPI_INT,MPI_COMM_WORLD));
+        }
+        
+    if(rank==0){printMatrix(mat,rig,col);}
     Control(MPI_Finalize());
     return 0;
 }

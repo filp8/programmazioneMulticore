@@ -24,8 +24,9 @@ int main(int argc, char **argv) {
 
 
 
-    init_random();
-    int *mat1 = generate_matrix_n_m(rig,col,-5,5);
+    //init_random();
+    srand(2476063558);
+    int *mat1 = generate_random_matrix(rig,col,-5,5);
     int *mat2 = (int*)malloc((rig*col)*sizeof(int));
         for (size_t s = 0 ; s<S ; s++){
             for (size_t i = 0;i<rig;i++){
@@ -46,13 +47,13 @@ int main(int argc, char **argv) {
                     mat2[(i*rig)+j] = sum;
                 }
             }
-            printMatrix_n_m(mat1,rig,col);
+            printMatrix(mat1,rig,col);
             printf("\n");
             int *appoggio = mat1;
             mat1 = mat2;
             mat2 = appoggio;
         }
-        printMatrix_n_m(mat1,rig,col);
+        printMatrix(mat1,rig,col);
     
     return 0;
 }

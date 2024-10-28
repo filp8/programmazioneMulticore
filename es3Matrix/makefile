@@ -11,7 +11,7 @@ debug:
 	mpicc -Og -Wall -Wextra -ggdb -I ./include -o ./build/parallel parallel.c -DDEBUG
 
 run-sequential:
-	./build/sequential 3 3 3
+	./build/sequential 4 3 3
 
 sequential: sequential.c
 	mkdir -p build
