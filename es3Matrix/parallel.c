@@ -96,6 +96,10 @@ int* ultima_riga(int* ricezione,int num_elementi,int col){
 
 int main(int argc, char **argv) {
     Control(MPI_Init(&argc, &argv));
+#ifdef DEBUG
+    set_log_level(LOG_DEBUG);
+    setvbuf(stderr,NULL, _IONBF,0);
+#endif // DEBUG
 
     size_t col = 0 ;
     size_t rig = 0 ;
@@ -130,6 +134,7 @@ int main(int argc, char **argv) {
     arrayDisposizioneInvio(size,disposizione,num_elementi);
 
     int *ricezione = malloc(num_elementi[rank]*sizeof(int));
+    fatal_if(ricezione == NULL,MSG_ERR_FULL_MEMORY);
 
     int rigaSopra[col];
     int rigaSotto[col];
@@ -174,6 +179,7 @@ int main(int argc, char **argv) {
     }
 
     int *array_ris = malloc(num_elementi[rank]*sizeof(int));
+    fatal_if(ricezione == NULL,MSG_ERR_FULL_MEMORY);
     memset(array_ris,0,num_elementi[rank]*sizeof(int));
     
     for(size_t s = 0;s<S;s++){
@@ -207,7 +213,7 @@ int main(int argc, char **argv) {
 
 
         for(int i = 0 ; i < num_elementi[rank] ; i++){
-            if(0<=i && (size_t)i<col){
+            if((size_t)i<col){
                 array_ris[i]+=rigaSopra[i];
             }else{
                 array_ris[i]+=ricezione[i-col];
@@ -240,6 +246,7 @@ int main(int argc, char **argv) {
                     0,
                     MPI_COMM_WORLD,
                     &handler_invio_sopra));
+                log_debug("il rank %d sotto Recv",rank);
             }
 
             Control(MPI_Wait(&handler_invio_sotto,MPI_STATUS_IGNORE));
@@ -252,6 +259,7 @@ int main(int argc, char **argv) {
                     1,
                     MPI_COMM_WORLD,
                     &handler_invio_sotto));
+                log_debug("il rank %d sotto Recv",rank);
             }
         }
         
