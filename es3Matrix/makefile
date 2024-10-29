@@ -1,7 +1,7 @@
 all: parallel run-parallel
 
 run-parallel:
-	mpirun --oversubscribe -n 4 ./build/parallel 4 4 4 
+	mpirun --oversubscribe -n 4 ./build/parallel 400 400 4 
 
 parallel: parallel.c
 	mkdir -p build

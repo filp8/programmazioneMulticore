@@ -27,7 +27,7 @@ static inline void usage(void) {
 void parse_args(int argc, char **argv) {
     ctx.program_name = argv[0];
     int opt;
-    while((opt = getopt(argc, argv, "p:s:")) != -1) {
+    while((opt = getopt(argc, argv, "p::s::")) != -1) {
         log_debug("opt: %d", opt);
         switch (opt)
         {
