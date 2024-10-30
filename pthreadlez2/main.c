@@ -34,6 +34,7 @@ typedef struct {
 } Thread_Output;
 
 void *run(void *arg) {
+    // TODO: aggiungere il fatto che n non divide la grandezza dei thread
     Thread_Contex *ctx = (Thread_Contex*)arg;
     Thread_Output *out = malloc(sizeof(*out));
     memset(out, 0, sizeof(*out));
@@ -102,6 +103,7 @@ int main(int argc, char **argv) {
         pthread_create(&threads[i],NULL,run,&args[i]);
     }
 
+    // TODO: permettere ai thread di sommare una variabile globale per togliere questo for
     double total_sum = 0;
     for(int i=0; i < glob_ctx.thread_size; i++) {
         Thread_Output *out;
