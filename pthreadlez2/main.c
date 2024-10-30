@@ -44,7 +44,7 @@ void *run(void *arg) {
     int end = local_m*(1+ctx->rank);
     double segno = glob_ctx.n % 2 == 0 ? 1 : -1;
     for(int i = start; i < end; i++) {
-        out->partial_sum+= segno*(double)1/(2*(double)i + 1);
+        out->partial_sum+= 4*segno*(double)1/(2*(double)i + 1);
         segno = (-1)*segno;
     }
     return out;
@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
     for(int i=0; i < glob_ctx.thread_size; i++) {
         Thread_Output *out;
         pthread_join(threads[i],(void**)&out);
-        total_sum += 4*out->partial_sum;
+        total_sum += out->partial_sum;
         free(out);
     }
 
