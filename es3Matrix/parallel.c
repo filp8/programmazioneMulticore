@@ -96,10 +96,8 @@ int* ultima_riga(int* ricezione,int num_elementi,int col){
 
 int main(int argc, char **argv) {
     Control(MPI_Init(&argc, &argv));
-#ifdef DEBUG
-    set_log_level(LOG_DEBUG);
+    //set_log_level(LOG_DEBUG);
     setvbuf(stderr,NULL, _IONBF,0);
-#endif // DEBUG
 
     size_t col = 0 ;
     size_t rig = 0 ;
@@ -212,8 +210,8 @@ int main(int argc, char **argv) {
         
 
 
-        for(size_t i = 0 ; i < num_elementi[rank] ; i++){
-            if(0<=i<col){
+        for(size_t i = 0 ; i<(size_t)num_elementi[rank] ; i++){
+            if(i<col){
                 //array_ris[i]+=rigaSopra[i];
                 int *ptr = &array_ris[i];
                 *ptr += rigaSopra[i]; // qua accade
@@ -221,7 +219,7 @@ int main(int argc, char **argv) {
                 array_ris[i]+=ricezione[i-col];
             }
             
-            if(num_elementi[rank]-col<=i<num_elementi[rank]){
+            if((size_t)num_elementi[rank]-col<=i && i<(size_t)num_elementi[rank]){
                 array_ris[i]+=rigaSotto[i%col];
             }else{
                 array_ris[i]+=ricezione[i+col];
