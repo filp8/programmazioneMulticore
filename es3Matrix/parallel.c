@@ -206,14 +206,14 @@ int main(int argc, char **argv) {
         
 
 
-        for(size_t i = 0 ; i < num_elementi[rank] ; i++){
-            if(0<=i<col){
+        for(int i = 0 ; i < num_elementi[rank] ; i++){
+            if(0<=i && (size_t)i<col){
                 array_ris[i]+=rigaSopra[i];
             }else{
                 array_ris[i]+=ricezione[i-col];
             }
             
-            if(num_elementi[rank]-col<=i<num_elementi[rank]){
+            if((size_t)num_elementi[rank]-col<=(size_t)i && i<num_elementi[rank]){
                 array_ris[i]+=rigaSotto[i%col];
             }else{
                 array_ris[i]+=ricezione[i+col];
