@@ -14,13 +14,17 @@
 #include <getopt.h>
 
 #include <pthread.h>
+#include <semaphore.h>
+
 #include <string.h>
 
 #include "utils/logging.h"
 
 typedef struct {
     long thread_size;
-    int n;
+    size_t n;
+    pthread_mutex_t sum_mutex;
+    double total_sum;
 } Global_Contex;
 
 static Global_Contex glob_ctx = {0};
@@ -29,26 +33,11 @@ typedef struct {
     int rank;
 } Thread_Contex;
 
+#define MAX_N (size_t)5*1024*1024*1024
+
 typedef struct {
-    double partial_sum;
+    // double partial_sum;
 } Thread_Output;
-
-void *run(void *arg) {
-    // TODO: aggiungere il fatto che n non divide la grandezza dei thread
-    Thread_Contex *ctx = (Thread_Contex*)arg;
-    Thread_Output *out = malloc(sizeof(*out));
-    memset(out, 0, sizeof(*out));
-
-    int local_m = glob_ctx.n/glob_ctx.thread_size;
-    int start = local_m*ctx->rank;
-    int end = local_m*(1+ctx->rank);
-    double segno = glob_ctx.n % 2 == 0 ? 1 : -1;
-    for(int i = start; i < end; i++) {
-        out->partial_sum+= 4*segno*(double)1/(2*(double)i + 1);
-        segno = (-1)*segno;
-    }
-    return out;
-}
 
 void parse_args(int argc, char **argv) {
     int opt = 0;
@@ -85,12 +74,36 @@ void parse_args(int argc, char **argv) {
         
 }
 
+void *run(void *arg) {
+    // TODO: aggiungere il fatto che n non divide la grandezza dei thread
+    Thread_Contex *ctx = (Thread_Contex*)arg;
+    double partial_sum = 0;
+
+    size_t local_m = glob_ctx.n/glob_ctx.thread_size;
+    size_t start = local_m*ctx->rank;
+    size_t end = local_m*(1+ctx->rank);
+    double segno = glob_ctx.n % 2 == 0 ? 1 : -1;
+    for(size_t i = start; i < end; i++) {
+        partial_sum+= segno*(double)1/(2*(double)i + 1);
+        segno = (-1)*segno;
+    }
+    pthread_mutex_lock(&glob_ctx.sum_mutex);
+    glob_ctx.total_sum += 4*partial_sum;
+    pthread_mutex_unlock(&glob_ctx.sum_mutex);
+
+    return NULL;
+}
+
+static inline void init_mutexs(void) {
+    pthread_mutex_init(&glob_ctx.sum_mutex, NULL);
+}
+
 int main(int argc, char **argv) {
     parse_args(argc, argv);
-
-    glob_ctx.n = glob_ctx.thread_size*10000000000000;
+    init_mutexs();
+    glob_ctx.n = MAX_N;
     
-    fatal_if(!(glob_ctx.n % glob_ctx.thread_size == 0 && glob_ctx.n >= glob_ctx.thread_size),
+    fatal_if(!(glob_ctx.n % glob_ctx.thread_size == 0 && glob_ctx.n >= (size_t)glob_ctx.thread_size),
         "Non hai messo il numero giusto di n rispetto ai thread,n: %d,size: %d",
         glob_ctx.n ,glob_ctx.thread_size);
     pthread_t *threads = malloc(glob_ctx.thread_size*sizeof(pthread_t));
@@ -104,15 +117,11 @@ int main(int argc, char **argv) {
     }
 
     // TODO: permettere ai thread di sommare una variabile globale per togliere questo for
-    double total_sum = 0;
     for(int i=0; i < glob_ctx.thread_size; i++) {
-        Thread_Output *out;
-        pthread_join(threads[i],(void**)&out);
-        total_sum += out->partial_sum;
-        free(out);
+        pthread_join(threads[i],NULL);
     }
 
-    printf("PI Greco: %lf\n", total_sum);
+    printf("PI Greco: %lf\n", glob_ctx.total_sum);
 
 
     free(threads);
