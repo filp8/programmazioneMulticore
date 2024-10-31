@@ -210,16 +210,36 @@ int main(int argc, char **argv) {
         
 
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        for(int i = 0 ; i < num_elementi[rank] ; i++){
+            if((size_t)i<col){
+                array_ris[i]+=rigaSopra[i];
+=======
+>>>>>>> filp8-master
         for(size_t i = 0 ; i<(size_t)num_elementi[rank] ; i++){
             if(i<col){
                 //array_ris[i]+=rigaSopra[i];
                 int *ptr = &array_ris[i];
                 *ptr += rigaSopra[i]; // qua accade
+<<<<<<< HEAD
+=======
+>>>>>>> 07642ab (mi ero dimenticato)
+>>>>>>> filp8-master
             }else{
                 array_ris[i]+=ricezione[i-col];
             }
             
+<<<<<<< HEAD
             if((size_t)num_elementi[rank]-col<=i && i<(size_t)num_elementi[rank]){
+=======
+<<<<<<< HEAD
+            if((size_t)num_elementi[rank]-col<=(size_t)i && i<num_elementi[rank]){
+=======
+            if((size_t)num_elementi[rank]-col<=i && i<(size_t)num_elementi[rank]){
+>>>>>>> 07642ab (mi ero dimenticato)
+>>>>>>> filp8-master
                 array_ris[i]+=rigaSotto[i%col];
             }else{
                 array_ris[i]+=ricezione[i+col];
