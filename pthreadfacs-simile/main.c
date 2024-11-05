@@ -3,6 +3,7 @@
 
 #include <getopt.h>
 
+#define _GNU_SOURCE
 #include <pthread.h>
 
 #include "utils/logging.h"
