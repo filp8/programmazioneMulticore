@@ -123,6 +123,7 @@ int main(int argc, char **argv) {
 
     printf("PI Greco: %lf\n", glob_ctx.total_sum);
 
+    pthread_mutex_destroy(&glob_ctx.sum_mutex);
 
     free(threads);
     free(args);
