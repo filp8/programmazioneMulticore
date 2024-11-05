@@ -2,11 +2,13 @@
 
 #include <mpi.h>
 
+#include "utils/random.h"
 #include "utils/macros.h"
-#define LOGGING_IMPLEMENTATION
 #include "utils/logging.h"
 
 int main(int argc, char **argv) {
+
+
     Control(MPI_Init(&argc, &argv));
 
     int rank, size;

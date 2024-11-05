@@ -3,7 +3,6 @@
 #include <mpi.h>
 
 #include "utils/macros.h"
-#define LOGGING_IMPLEMENTATION
 #include "utils/logging.h"
 
 int main(int argc, char **argv) {

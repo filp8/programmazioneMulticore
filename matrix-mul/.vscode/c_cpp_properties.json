@@ -4,7 +4,9 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/usr/lib/aarch64-linux-gnu/openmpi/include"
+                "/usr/lib/aarch64-linux-gnu/openmpi/include",
+                "/home/fo/Documents/programmazioneMulticore/matrix-mul/fil/include",
+                "/home/fo/Documents/programmazioneMulticore/matrix-mul/luca/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/mpicc",
