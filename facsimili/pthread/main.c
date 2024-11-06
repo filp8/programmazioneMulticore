@@ -22,9 +22,13 @@ typedef struct {
 // NON MODIFICARE ASSOLUTAMENTE QUESTA VARIABILE, LEGGI SOLTANTO (TODO: non so come controllare questa cosa a tempo di compilazione)
 static Global_Contex glob_ctx = {0};
 
+typedef struct {
+    int rank;
+} Thread_Contex;
+
 void *run(void *arg) {
-    int *rank = arg;
-    printf("Hello World from: %d, size: %ld\n",*rank, glob_ctx.thread_size);
+    Thread_Contex *ctx = arg;
+    printf("Hello World from: %d, size: %ld\n",ctx->rank, glob_ctx.thread_size);
     return NULL;
 }
 
@@ -70,10 +74,10 @@ int main(int argc, char **argv) {
     parse_args(argc, argv);
 
     pthread_t *threads = malloc(glob_ctx.thread_size*sizeof(pthread_t));
-    int *args = malloc(glob_ctx.thread_size*sizeof(*args)); //TODO: passare gli argomenti usando posix_memalign con i giusti argomenti per evitare che gli argomenti siano sulla stessa linea della cache
+    Thread_Contex *args = malloc(glob_ctx.thread_size*sizeof(*args)); //TODO: passare gli argomenti usando posix_memalign con i giusti argomenti per evitare che gli argomenti siano sulla stessa linea della cache
 
     for(int i=0; i < glob_ctx.thread_size; i++) {
-        args[i] = i;
+        args[i].rank = i;
         pthread_create(&threads[i],NULL,run,&args[i]);
     }
 
