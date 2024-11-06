@@ -27,7 +27,7 @@ int *generate_matrix(size_t order) {
     fatal_if(result == NULL ,MSG_ERR_FULL_MEMORY);
 
     for(size_t i = 0; i < tot_length; i++) {
-        result[i] = uniform_int_distribution(-5, 5);
+        result[i] = uniform_int_distribution(0, 10);
     }
 
     return result;

@@ -37,7 +37,6 @@ int main(int argc, char **argv) {
         matrix1 = (int*)malloc(numeroCelle*sizeof(int));
         matrix2 = (int*)malloc(numeroCelle*sizeof(int));
     }
-    log_info("sono arrivato qua dal rank %d",rank);
     Control(MPI_Bcast(
         matrix1,numeroCelle, MPI_INT,
         0, MPI_COMM_WORLD
@@ -47,29 +46,25 @@ int main(int argc, char **argv) {
         matrix2, numeroCelle, MPI_INT,
         0, MPI_COMM_WORLD
     ));
-    log_info("sono arrivato qua dal rank %d",rank);
-
-    for (int y = rank ; y<order ; y+=size){
-        int *risultato_linea = malloc(order*sizeof(int));
-        for (int x = 0 ; x <= order ; x++){
-            risultato_linea[x]=dot_product(matrix1+(y*order),matrix2+(x*order),order);   
-        }
-        Control(MPI_Send(risultato_linea,order,MPI_INT,0,y,MPI_COMM_WORLD));
-        free(risultato_linea);
-    }
-
-    if(rank == 0 ){
-        for (int r = 1;r<size;r++){
-            for(int t = 1;t <= (order+size-1)/size;t++){ //divisione con resto arrotondato superiormente 
-                if((r*t)<order){
-                    void *partenza = risultato+((r+t)*order);
-                    MPI_Recv(partenza,order,MPI_INT,
-                                r,t,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-                }
+    if(rank!=0){
+        for (int y = rank-1 ; y<order ; y+=size-1){
+            int *risultato_linea = malloc(order*sizeof(int));
+            for (int x = 0 ; x <= order ; x++){
+                risultato_linea[x]=dot_product(matrix1+(y*order),matrix2+(x*order),order);   
             }
+            log_info("calcolo riga: %d rank: %d",y,rank);
+            Control(MPI_Send(risultato_linea,order,MPI_INT,0,y,MPI_COMM_WORLD));
+            free(risultato_linea);
         }
     }
-    printMatrix(risultato,order,order);
+    if(rank==0){
+        for (int ri = 0;ri<order;ri++){
+                    void *partenza = risultato+(ri*order);
+                    MPI_Recv(partenza,order,MPI_INT,(ri%(size-1))+1,ri,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+        }
+        printMatrix(risultato,order,order);
+    }
+    
     Control(MPI_Finalize());
     return 0;
 }
