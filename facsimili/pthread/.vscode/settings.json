@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "*.java": "java",
-        "pthread.h": "c"
+        "pthread.h": "c",
+        "errno.h": "c"
     }
 }

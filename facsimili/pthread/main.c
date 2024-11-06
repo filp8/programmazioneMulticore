@@ -6,11 +6,17 @@
 #include <stdlib.h>
 
 #include <getopt.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+
 
 #include "utils/logging.h"
 
+// ATTENZIONE!!! è roba constante
 typedef struct {
     long thread_size;
+    long dcache_line_size;
 } Global_Contex;
 
 static Global_Contex glob_ctx = {0};
@@ -22,6 +28,8 @@ void *run(void *arg) {
 }
 
 void parse_args(int argc, char **argv) {
+    glob_ctx.dcache_line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+    fatal_if(glob_ctx.dcache_line_size == -1, "syscall error: %s", strerror(errno));
     int opt = 0;
     char *program_name = argv[0];
     char *number;
