@@ -1,10 +1,11 @@
+#define _GNU_SOURCE // IMPORTANTE: lasciare queste tre righe 
+#include <pthread.h>
+#include <sched.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <getopt.h>
-
-#define _GNU_SOURCE
-#include <pthread.h>
 
 #include "utils/logging.h"
 

@@ -1,7 +1,9 @@
-#include <stdio.h>
-
-#include <mpi.h>
+#define _GNU_SOURCE // IMPORTANTE: lasciare queste tre righe di codice incima al file
 #include <pthread.h>
+#include <sched.h>
+
+#include <stdio.h>
+#include <mpi.h>
 
 #include "utils/macros.h"
 #include "utils/logging.h"
