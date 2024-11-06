@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
     parse_args(argc, argv);
 
     pthread_t *threads = malloc(glob_ctx.thread_size*sizeof(pthread_t));
-    int *args = malloc(glob_ctx.thread_size*sizeof(*args));
+    int *args = malloc(glob_ctx.thread_size*sizeof(*args)); //TODO: passare gli argomenti usando posix_memalign con i giusti argomenti per evitare che gli argomenti siano sulla stessa linea della cache
 
     for(int i=0; i < glob_ctx.thread_size; i++) {
         args[i] = i;
