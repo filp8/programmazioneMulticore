@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "*.java": "java",
+        "alloca.h": "c",
+        "macros.h": "c",
+        "mpi.h": "c",
+        "stdlib.h": "c",
+        "random": "c"
+    }
+}

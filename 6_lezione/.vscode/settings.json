@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.java": "java",
+        "functional": "cpp",
+        "time.h": "c",
+        "logging.h": "c"
+    }
+}

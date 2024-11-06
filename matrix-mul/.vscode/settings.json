@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "*.java": "java",
+        "stdlib.h": "c",
+        "functional": "cpp",
+        "logging.h": "c",
+        "cerrno": "c",
+        "macros.h": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "vector": "c",
+        "string": "c",
+        "cstdlib": "c"
+    }
+}

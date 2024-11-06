@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "*.java": "java",
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "type_traits": "c"
+    }
+}
