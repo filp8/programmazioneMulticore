@@ -19,6 +19,7 @@ typedef struct {
     long dcache_line_size;
 } Global_Contex;
 
+// NON MODIFICARE ASSOLUTAMENTE QUESTA VARIABILE, LEGGI SOLTANTO (TODO: non so come controllare questa cosa a tempo di compilazione)
 static Global_Contex glob_ctx = {0};
 
 void *run(void *arg) {
