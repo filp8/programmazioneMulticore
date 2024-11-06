@@ -70,7 +70,7 @@ void parse_args(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-
+    setvbuf(stderr, NULL, _IONBF, 0);
     parse_args(argc, argv);
 
     pthread_t *threads = malloc(glob_ctx.thread_size*sizeof(pthread_t));
