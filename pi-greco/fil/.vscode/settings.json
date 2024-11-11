@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.java": "java",
+        "pthread.h": "c",
+        "errno.h": "c",
+        "type_traits": "c"
+    }
+}
